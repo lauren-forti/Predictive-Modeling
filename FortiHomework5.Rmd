@@ -1,0 +1,168 @@
+---
+title: 'Homework 5: Business Problem'
+author: "Lauren Forti"
+date: "11/15/2022"
+output: html_document
+---
+
+
+
+### Read in Dataset
+```{r warning=FALSE, message=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+# read in data
+ped <- read.csv("pedesterian.csv")
+
+# display first few rows
+head(ped)
+```
+
+
+
+### Explore Data Graphically
+```{r}
+# transform response
+ped$pedestrians <- log(ped$pedestrians)
+
+# convert factors
+ped$weekday <- as.factor(ped$weekday)
+ped$weather <- as.factor(ped$weather)
+ped$hour <- as.factor(ped$hour)
+
+# get summary stats
+summary(ped)
+
+# plot peds
+ggplot(ped, aes(x=pedestrians)) + geom_density()
+
+# var plots
+ggplot(ped, aes(x=weekday, y=pedestrians)) + geom_boxplot()
+ggplot(ped, aes(x=weather, y=pedestrians)) + geom_boxplot()
+ggplot(ped, aes(x=hour, y=pedestrians)) + geom_boxplot()
+ggplot(ped, aes(x=temp_forecast, y=pedestrians)) + geom_point()
+```
+
+**Weekday** does not appear to have much of an influence on the number of pedestrians.  
+
+**Hour** and **Weather** appear to have an effect on the number of pedestrians.  
+For **Hour**, the late morning through the afternoon has the most pedestrians.  
+For **Weather**, relatively nice weather see more pedestrians than nighttime and inclement weather.   
+
+**Temperature** within comfortable range (between freezing and high heat) see the most pedestrians.  
+
+
+
+### Split into Test/Train
+```{r}
+set.seed(123)
+
+index <- sample(1:nrow(ped), size = round(0.7*nrow(ped)))
+
+train <- ped[index, ]
+test <- ped[-index, ]
+```
+
+
+
+### Build Regression Model
+```{r warning=FALSE}
+
+# build model
+model <- glm(pedestrians~weather+temperature+precipitation+hour+weekday+temp_forecast,
+             family=poisson(link="log"),
+             data=train)
+
+# output results
+results <- summary(model)
+results
+
+# make predictions
+test$predicted <- predict(model, newdata=test, type="response")
+```
+
+
+
+### Predict
+```{r}
+# by weather
+test %>%
+  group_by(weather) %>% 
+  summarise(Actual = sum(pedestrians),
+            Predicted = sum(predicted)) %>% 
+  ggplot(aes(x = weather)) +
+        geom_line(aes(y = `Actual`), color = "gray40", group = 1)+
+        geom_line(aes(y = `Predicted`), color = "green", group = 1)
+
+# by precipitation
+test %>%
+  group_by(precipitation) %>% 
+  summarise(Actual = sum(pedestrians),
+            Predicted = sum(predicted)) %>% 
+  ggplot(aes(x = precipitation)) +
+        geom_line(aes(y = `Actual`), color = "gray40", group = 1)+
+        geom_line(aes(y = `Predicted`), color = "green", group = 1)
+
+# by hour
+test %>%
+  group_by(hour) %>% 
+  summarise(Actual = sum(pedestrians),
+            Predicted = sum(predicted)) %>% 
+  ggplot(aes(x = hour)) +
+        geom_line(aes(y = `Actual`), color = "gray40", group = 1)+
+        geom_line(aes(y = `Predicted`), color = "green", group = 1)
+
+# by weekday
+test %>%
+  group_by(weekday) %>% 
+  summarise(Actual = sum(pedestrians),
+            Predicted = sum(predicted)) %>% 
+  ggplot(aes(x = weekday)) +
+        geom_line(aes(y = `Actual`), color = "gray40", group = 1)+
+        geom_line(aes(y = `Predicted`), color = "green", group = 1)
+
+# by temp forecast
+test %>%
+  group_by(temp_forecast) %>% 
+  summarise(Actual = sum(pedestrians),
+            Predicted = sum(predicted)) %>% 
+  ggplot(aes(x = temp_forecast)) +
+        geom_line(aes(y = `Actual`), color = "gray40", group = 1)+
+        geom_line(aes(y = `Predicted`), color = "green", group = 1)
+```
+
+
+
+### Results
+```{r}
+# extract coefficients
+glm_coef <- coef(results)
+
+# sort by z value
+i <- order(glm_coef[,"Pr(>|z|)"])
+sorted <- glm_coef[i,]
+
+# exp coefficients and round
+round(cbind(sorted, exp(sorted[,"Estimate"])),6)
+
+# get different weather classifications
+unique(ped$weather)
+```
+
+At a significance level of 0.05, **Hours 7 - 20, 22**, nighttime and inclement **weather**, **precipitation**, and **temp_forecast** are statistically significant factors in odds of the number of pedestrians. **Weekday**, **temperature**, **Hour 21**, and windy **weather** are not significant in this model.  
+
+**Hours 7 - 20** have a significant and positive relationship with the number of pedestrians, peaking in the afternoon hours. The temperature forecast also has a significant and positive relationship with the number of pedestrians.  
+The only **hour** with a significant negative relationship is **Hour 22**.  
+
+For **weather**, nighttime and inclement weather have a significant and negative relationship with the number of pedestrians. Specifically, weather conditions classified as rain, clear-night, partly-cloudy-night, cloudy, snow, partly-cloudy-day, sleet, and fog.  
+
+**Precipitation** has a significant and negative relationship with the odds for the number of pedestrians.  
+
+**Hour 21**, **weekday**, **temperature**, and windy **weather** are not statistically significant factors because their p-values are over 0.05.  
+
+From this, it can be concluded that there are likely the most pedestrians during the afternoon when the weather is nice and without precipitation and when the temperature forecast is comfortable.  
+\
+\
+\

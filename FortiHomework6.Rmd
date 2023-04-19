@@ -1,0 +1,114 @@
+---
+title: "Bike Sharing"
+author: "Lauren Forti"
+date: "11/20/2022"
+output: html_document
+---
+
+
+## **Problem 1: Prepare Data**
+### Setup
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tree)
+library(randomForest)
+```
+
+### Read in data
+```{r}
+# read in data
+bike <- read.csv("Bike.csv")
+
+# display first few rows
+head(bike)
+```
+
+### Split into Test/Train Sets
+```{r}
+# set seed
+set.seed(1)
+index <-  sample(1:nrow(bike), nrow(bike)*2/3)
+
+# split
+train <- bike[index,]
+test <- bike[-index,]
+```
+
+
+
+## **Problem 2: Decision Tree**
+### Cross-Validation
+```{r}
+# build model
+tree_bike <- tree(count ~ season + holiday + workingday + temp + atemp + humidity + windspeed + casual + registered, data=train)
+
+# cross validation
+cv.bike <- cv.tree(tree_bike)
+summary(cv.bike)
+```
+
+### Plot Model Results
+```{r}
+# plot cv results
+plot(cv.bike$size, cv.bike$dev, type = 'b')
+```
+
+### Pruning
+```{r}
+# prune model
+prune.bike = prune.tree(tree_bike, best = 5)
+```
+
+### Plot Best Model
+```{r}
+# plot best model
+plot(prune.bike)
+text(prune.bike, pretty = 0)
+```
+
+### Test Error
+```{r}
+# make predictions
+yhat <- predict(prune.bike, newdata=test)
+bike.test <- test[, "count"]
+
+# calc MSE
+mean((yhat-bike.test)^2)
+```
+
+
+
+## **Problem 3: Random Forest**
+### Build Model
+```{r}
+# build model
+rf.bike <- randomForest(count ~ season + holiday + workingday + temp + atemp + humidity + windspeed + casual + registered, data=train, importance=TRUE)
+```
+
+### Test Error
+```{r}
+# make predictions
+yhat.rf <- predict(rf.bike, newdata=test)
+bike.test.rf <- test[, "count"]
+
+# calc MSE
+mean((yhat.rf - bike.test.rf)^2)
+```
+
+### Feature Importance
+```{r}
+# get featire importance
+importance(rf.bike)
+```
+
+### Plot Feature Importance
+```{r}
+# plot importance of vars
+varImpPlot(rf.bike)
+```
+
+The top 2 important predictors are **registered** and **casual**.  
+\
+\
+\

@@ -1,0 +1,161 @@
+---
+title: "Linear Regression"
+author: "Lauren Forti"
+date: "11/3/2022"
+output: html_document
+---
+
+# Part I
+### Problem 1
+Option **c** is true.
+
+The model equation is: $y = 50 + 20*x1 + .07*x2 + 35*x3 + 0.01*x1*x2 -10*x1*x3$.
+
+For high school graduates, the equation is:
+$y = 50 + 20*x1 + .07*x2 + 35*0 + 0.01*x1*x2 -10*x1*0$  
+Reducing to:
+$y = 50 + 20*x1 + .07*x2 + 0.01*x1*x2$  
+
+For college graduates, the equation is:
+$y = 50 + 20*x1 + .07*x2 + 35*1 + 0.01*x1*x2 -10*x1*1$  
+Reducing to:
+$y = 85 + 10*x1 + .07*x2 + 0.01*x1*x2$  
+  
+Setting the two equations equal to each other, then solving to find which predictor, if any, results in a higher salary for high school graduates compared to college graduates:  
+$50 + 20*x1 + .07*x2 + 0.01*x1*x2 \ge 85 + 10*x1 + .07*x2 + 0.01*x1*x2$  
+$50 + 20*x1 \ge 85 + 10*x1$ 
+$20*x1 \ge 35 + 10*x1$  
+$10*x1 \ge 35$  
+$x1 \ge 35/10$  
+$x1 \ge 3.5$  
+  
+High school graduates earn more than college graduates on average provided that their high school GPA is equal to or greater than 3.5. Therefore, for a fixed value of IQ and GPA, high school graduates earn more, on average, than college graduates provided that the GPA is high enough.  
+
+
+
+### Problem 2
+``` {r}
+# model 
+# y = 50 + 20*x1 + .07*x2 + 35*x3 + 0.01*x1*x2 -10*x1*x3
+
+# variables
+x1 = 4.0
+x2 = 110
+x3 = 1
+
+# predict on fixed variables
+pred = 50 + 20*x1 + .07*x2 + 35*x3 + 0.01*x1*x2 -10*x1*x3
+
+# output results
+print(pred)
+```
+
+The salary of a college graduate with IQ of 110 and a GPA of 4.0 is predicted to be $137,100.  
+
+
+
+### Problem 3
+**False** because the value of the coefficient does not measure the strength of the interaction effect. It is the statistical significance that provides evidence of an interaction effect. Even if the coefficient value is small, there could be strong evidence (p-value < 0.05) of an interaction effect. 
+
+
+
+# Part II
+
+# Setup
+```{r}
+# load libraries
+library(dplyr)
+library(ggplot2)
+
+# load in data
+cars <- read.csv("mtcars.csv")
+
+# show first 5 rows
+head(cars, 5)
+```
+
+
+
+### Problem 1: Simple Linear Regression
+```{r}
+# build linear regression
+model <- lm(mpg~hp, data = cars)
+
+# get results
+summary(model)
+```
+
+### Problem 2: Relationship Present
+Yes, there is relationship between mpg and horsepower. 
+  
+The estimated coefficient value for horsepower is -0.065. The p-value is much smaller than 0.05, so the coefficient value should be trusted. This indicates a relationship between mpg and horsepower.  
+
+
+
+### Problem 3: Relationship Strength
+The relationship between mpg and horsepower is strong because the F-statistic (30.5) is large. 
+
+
+
+### Problem 4: Positive or Negative Relationship
+The relationship between mpg and horsepower is negative because the coefficient value is negative.  
+
+
+### Problem 5: Prediction
+```{r}
+# make df for prediction of hp = 100
+hp <- c(100)
+pred_data <- data.frame(hp)
+
+# predict
+pred <- predict(model, newdata=pred_data)
+
+# output results
+print(pred)
+```
+
+The predicted mpg associated with a horsepower of 100 is 22.84317.  
+
+
+
+### Problem 6: Plot
+```{r}
+# make scatter plot
+plot(cars$hp, cars$mpg, pch=19)
+
+# add regression line
+abline(model, col="red")
+```
+
+
+### Problem 7: Multiple Linear Regression
+```{r}
+# build linear regression
+model2 <- lm(mpg~cyl+disp+hp+wt+vs+gear, data = cars)
+
+# get results
+summary(model2)
+```
+
+
+### Problem 8: Relationship Present
+Yes, there is a relationship between the predictors and the response, mpg.  
+
+
+### Problem 9: Which Predictors
+The predictors that seem to have a statistically significant relationship to the response, mpg, are **wt** and **hp**. They are the only two predictors with p-values under 0.05.  
+
+
+### Problem 10: Interaction Effects
+```{r}
+# build linear regression
+model3 <- lm(mpg~wt*hp, data = cars)
+
+# get results
+summary(model3)
+```
+
+Yes, the interaction effects between hp and wt are statistically significant. The p-value of wt:hp, 0.00036, is less than 0.05.  
+
+\
+\

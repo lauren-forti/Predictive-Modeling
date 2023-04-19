@@ -1,0 +1,98 @@
+---
+title: "Exploratory Data Analysis (EDA)"
+author: "Lauren Forti"
+date: "10/24/2022"
+output: html_document
+---
+
+
+# Problem 1: Load the dataset
+```{r}
+# read in df
+titanic <- read.csv("titanic.csv")
+```
+
+
+
+# Problem 2: Explore the data
+```{r}
+# get summary stats
+summary(titanic)
+
+# get ggplot
+library (ggplot2)
+
+# convert to factors
+titanic$Survived <- factor(titanic$Survived)
+titanic$Sex <- factor(titanic$Sex)
+titanic$Pclass <- factor(titanic$Pclass)
+titanic$Embarked <- factor(titanic$Embarked)
+
+# density plot of age by survival status
+ggplot(titanic, aes(x=Age, fill=Survived, color=Survived)) + geom_density(position="identity", alpha=0.5)
+
+# bar chart of passenger class by survival status
+ggplot(titanic, aes(x=Pclass, fill=Survived, color=Survived)) + geom_bar(position="identity", alpha=0.5)
+
+# bar chart of passenger sex by survival status
+ggplot(titanic, aes(x=Sex, fill=Survived, color=Survived)) + geom_bar(alpha=0.5)
+
+# bar chart of passenger sex by passenger class
+ggplot(titanic, aes(x=Sex, fill=Pclass, color=Pclass)) + geom_bar(alpha=0.5)
+
+# bar chart of fare by survival status
+ggplot(titanic, aes(x=Fare, fill=Survived, color=Survived)) + geom_density(alpha=0.5)
+```
+
+Age does not seem to be a strong factor in determining survival status, but passenger class and sex do.
+
+Age has a large maximum value with a lower median and mean. This indicates that there are extreme outliers. The same can be said for the fare and number of siblings.
+
+Those in passenger class 3 were significantly more likely to not survive. Looking at the mean, most passengers were in class 2.  Passenger class 2 had about an equal chance. Passenger class 1 had more passengers survive than not survive.
+
+For passenger sex, males were less likely to survive compared to women. Further exploration shows that a majority of third class passengers were male.
+
+From this, it can be concluded that passenger class and sex impacted survival status.
+
+
+
+
+# Problem 3: Missing Values
+```{r}
+# calc % of age NA
+print(177/nrow(titanic))
+
+# density plot of present vs missing age values by survival status
+ggplot(titanic, aes(x=is.na(Age), fill=Survived, color=Survived)) + geom_bar(position="identity", alpha=0.5)
+
+# subset age NA and those who did not survive
+ageNA_0 <- subset(titanic, is.na(titanic$Age)==TRUE & titanic$Survived==0)
+# subset age and those who did not survive
+age_0 <- subset(titanic, is.na(titanic$Age)==FALSE & titanic$Survived==0)
+
+# subset age NA and those who did survive
+ageNA_1 <- subset(titanic, is.na(titanic$Age)==TRUE & titanic$Survived==1)
+# subset age and those who did survive
+age_1 <- subset(titanic, is.na(titanic$Age)==FALSE & titanic$Survived==1)
+
+# output ratios
+print(nrow(ageNA_1)/nrow(ageNA_0))
+print(nrow(age_1)/nrow(age_0))
+```
+
+The variable **Age** is missing 177 values, which is about 20% of the dataset. This is a good chunk of the dataset. All the passengers realistically have an age that can be quantified in years. In addition, the graphs from the previous section indicate that age is not a huge factor in survival status. 
+
+The weaker relationship between age and survival, the type of data, and the percentage missing justifies imputation. Since there are extreme outliers in the dataset for age, using the median age would be a better choice than the mean for this method.
+
+
+
+# Problem 4: 
+As previously discussed in Problem 2, the target variable **Survived** seems dependent primarily on sex and passenger class. Passenger class 3 was mostly male, and men were less likely to survive overall.
+
+
+
+# Problem 5: 
+A possible new predictor would be the family size. The number of parents and siblings would be summed, in addition to the individual passenger. This would result in the size of the family.
+\
+\
+\

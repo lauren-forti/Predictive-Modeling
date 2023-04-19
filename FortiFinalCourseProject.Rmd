@@ -1,0 +1,210 @@
+---
+title: "Final Course Project"
+author: "Lauren Forti"
+date: "12/5/2022"
+output: html_document
+---
+
+# **Part 1: Data Preparation**
+## Setup
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(tree)
+library(randomForest)
+library(factoextra)
+library(cluster)
+```
+
+## Read in Data
+```{r}
+# make df
+ins <- read.csv("insurance.csv")
+
+# display first few rows of df
+head(ins)
+```
+
+## Transformations
+```{r}
+# transform charges
+ins$log_charges <- log(ins$charges)
+
+# convert to factors
+ins$sex <- as.factor(ins$sex)
+ins$smoker <- as.factor(ins$smoker)
+ins$region <- as.factor(ins$region)
+
+# check changes
+head(ins)
+```
+
+## Split Data
+```{r}
+# set seed
+set.seed(1)
+index <-  sample(1:nrow(ins), nrow(ins)*.7)
+
+# split data
+train <- ins[index,]
+test <- ins[-index,]
+```
+
+
+# **Part 2: Multiple Linear Regression Model**
+```{r warning=FALSE}
+# build linear regression model
+lm.model <- lm(log_charges~age+sex+bmi+children+smoker+region,data=train)
+
+# output results
+results <- summary(lm.model)
+results
+
+# calc mse
+lm.model.mse <- mean(lm.model$residuals^2)
+# calc rmse
+lm.model.rmse <- sqrt(lm.model.mse)
+lm.model.rmse
+```
+
+There is a relationship between the predictors and the response, **log_charges**.  
+
+The predictors with statistically significance are **age, sex=male, bmi, children, smoker=yes**, and **region=northwest, southeast, southwest**. Their p-values are all below 0.05.  
+
+**Sex** is statistically significant when it is male.  
+
+The RMSE is 0.4225.    
+
+
+# **Part 3: Regression Tree Model**
+```{r}
+# build model
+tr.model <- tree(log_charges~age+sex+bmi+children+smoker+region,data=train)
+summary(tr.model)
+
+# find optimal tree
+cv.tr.model <- cv.tree(tr.model)
+cv.tr.model
+
+# plot cv results
+plot(cv.tr.model$size, cv.tr.model$dev, type = 'b')
+```
+
+The optimal tree has 5 branches. This is because the changes in deviance slow down at 5 branches. The deviance of 6, 7, and 8 branches are not much smaller than at 5. Higher numbers of branches would have more bias, less variance, and likely overfit the model. Anything lower than 5 would likely underfit the model. The 5 branches is the sweet spot in the variance-bias tradeoff.  
+
+
+
+```{r}
+# prune model
+prune.tr.model = prune.tree(tr.model, best = 5)
+
+# plot best model
+plot(prune.tr.model)
+text(prune.tr.model, pretty = 0)
+
+# make predictions
+yhat.tr <- predict(prune.tr.model, newdata=test)
+tr.model.test <- test[, "log_charges"]
+
+# calc MSE
+tr.model.mse <- mean((yhat.tr-tr.model.test)^2)
+# calc RMSE
+tr.model.rmse <- sqrt(tr.model.mse)
+tr.model.rmse
+```
+
+The RMSE is 0.4761.  
+
+
+# **Part 4: Random Forest Model**
+```{r}
+# build model
+rf.model <- randomForest(log_charges~age+sex+bmi+children+smoker+region,data=train,importance=TRUE)
+
+# make predictions
+yhat.rf <- predict(rf.model, newdata=test)
+rf.model.test <- test[, "log_charges"]
+
+# calc MSE
+rf.model.mse <- mean((yhat.rf-rf.model.test)^2)
+# calc RMSE
+rf.model.rmse <- sqrt(rf.model.mse)
+rf.model.rmse
+```
+
+The RMSE is 0.4331.  
+
+
+```{r}
+# get feature importance
+importance(rf.model)
+
+# plot importance of vars
+varImpPlot(rf.model)
+```
+
+The top three important predictors in the random forest model are **smoker, age**, and **children**.  
+
+
+# **Part 5: k-means Cluster Analysis**
+```{r}
+# drop first col
+ins.scaled <- select(ins, -c(`sex`,`smoker`,`region`))
+
+# scale data
+ins.scaled <- scale(ins.scaled)
+
+# get optimal # of clusters
+fviz_nbclust(ins.scaled, kmeans, method = "silhouette")
+```
+
+The optimal number of clusters is 5 because it is the peak, meaning that it has the greatest distance between clusters. The groups are most distinct at k=5 compared to other values of k.   
+
+
+```{r}
+# visualize clusters
+ins.scaled.kmeans <- kmeans(ins.scaled, 5, nstart = 25)
+fviz_cluster(ins.scaled.kmeans, data = ins.scaled)
+```
+
+
+
+# **Part 6: Analysis**
+```{r}
+Model.Type <- c("Multiple Linear Regression", "Regression Tree", "Random Forest")
+Test.MSE <- round(c(lm.model.rmse, tr.model.rmse, rf.model.rmse),4)
+
+# make df
+rmse <- data.frame(Model.Type, Test.MSE)
+
+# output df
+rmse
+```
+
+```{r results=FALSE}
+# save as pdf
+pdf(file="ModelMSEs.pdf")
+gridExtra::grid.table(rmse)
+dev.off()
+```
+
+The best model is the **linear regression model** because it has the lowest RMSE of the three at 0.4225. It has the highest accuracy for predictions.  
+
+The **regression tree model** would be the best predictive model for the sales representatives. It is not as accurate in prediction as the random forest or linear regression models, but it is a visual, easy way for clients to understand potential costs. The trade-off is slightly less accuracy for something visually digestible.  
+
+## Redisplay Regression Tree Model
+```{r}
+# make copy of prune.tr.model
+prune.tr.copy <- prune.tr.model
+
+# transform
+prune.tr.copy$frame$yval <- exp(prune.tr.copy$frame$yval)
+
+# replot model
+plot(prune.tr.copy)
+text(prune.tr.copy, pretty = 0)
+```
+
+\
+\
+\

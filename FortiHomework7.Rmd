@@ -1,0 +1,54 @@
+---
+title: 'Homework 7: Credit Card Clustering'
+author: "Lauren Forti"
+date: "11/29/2022"
+output: html_document
+---
+
+## **Problem 1: Prepare Data**
+### Setup
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(factoextra)
+library(cluster)
+```
+
+### Read in data
+```{r}
+# read in data
+cc <- read.csv("CreditCards.csv")
+
+# display first few rows
+head(cc)
+```
+
+
+
+## Problem 2: k-means Cluster Analysis**
+### Determine Optimal Number of Clusters
+```{r warning=FALSE}
+# drop first col
+cc <- select(cc, -c(`X`))
+
+# set seed
+set.seed(1)
+
+# get optimal # of clusters
+fviz_nbclust(cc, kmeans, method = "silhouette")
+```
+
+The optimal number of clusters is 2 because it is the peak, meaning that it has the greatest distance between clusters. The groups are most distinct at k=7 compared to other values of k.    
+
+
+### Visualize Clusters
+```{r}
+# visualize clusters
+cc.res <- kmeans(cc, 2, nstart = 25)
+fviz_cluster(cc.res, data = cc)
+```
+
+The data has been segmented into two clusters.  
+\
+\
+\

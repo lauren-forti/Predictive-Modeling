@@ -1,0 +1,146 @@
+---
+title: "Logistic Regression"
+author: "Lauren Forti"
+date: "11/7/2022"
+output: html_document
+---
+
+
+# **Part I**  
+### Problem 1
+
+The equation is: $\hat p(X) = \frac{e^{-6+0.05*X_{1}+X_{2}}}{1+e^{-6+0.05*X_{1}+X_{2}}}$  
+
+For a student who studies for 40 hours and has an undergrad GPA, the equation is:  
+$\hat p(X) = \frac{e^{-6+0.05*40+3.5}}{1+e^{-6+0.05*40+3.5}}$  
+$\hat p(X) = \frac{e^{-0.5}}{1+e^{-0.5}}$  
+$\hat p(X) = \frac{0.6065}{1.6065}$  
+$\hat p(X) = 0.3775$  
+
+The probability of a student who studies for 40 hours and has an undergrad GPA of 3.5 getting an A in the class is **37.75%**.  
+
+
+
+### Problem 2  
+
+$0.5 = \frac{e^{-6+0.05*X_{1}+3.5}}{1+e^{-6+0.05*X_{1}+3.5}}$  
+$0.5*(1+e^{0.05*X_{1}-2.5}) = e^{0.05*X_{1}-2.5}$  
+$0.5+0.5e^{0.05*X_{1}-2.5} = e^{0.05*X_{1}-2.5}$  
+$0.5 = 0.5e^{0.05*X_{1}-2.5}$  
+$1 = e^{0.05*X_{1}-2.5}$  
+$ln(1) = ln(e^{0.05*X_{1}-2.5})$  
+$0 = 0.05*X_{1}-2.5$  
+$2.5 = 0.05*X_{1}$  
+$50 = X_{1}$  
+
+The number of hours the student in **Problem 1** needs to study to have a 50% chance of getting an A is **50 hours**.  
+
+
+
+# **Part II**  
+
+### Problem 1: Load in data
+```{r}
+# load packages
+library(ISLR2)
+library(ggplot2)
+library(dplyr)
+
+# show first few rows
+Week <- Weekly
+head(Week)
+```
+
+
+
+### Problem 2: Numerical/Graphical Summaries
+```{r}
+# convert direction to factor
+Week$Direction <- as.factor(Week$Direction)
+
+# get summary stats
+summary(Week)
+
+# plot direction
+ggplot(Week, aes(x = Direction)) + geom_bar()
+
+# plot matrix of variables
+pairs(~Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, col = Week$Direction, pch = 19, data = Week)
+```
+
+The lag measurement variables (Lag1, Lag2, Lag3, Lag4, Lag5) seem to have similar relationships to each other and to Volume, but nothing linear. The clustering is within similar bounds, since the values are within similar ranges. This can be confirmed by the similar minimum and maximums for the lag variables.  
+
+
+
+### Problem 3: Logistic Regression
+```{r}
+# build model
+model <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,  family=binomial(link=logit), data=Week)
+```
+
+
+
+### Problem 4: Discuss Results
+```{r}
+# calc predictions
+Week$Predictions <- predict(model, Week, type='response')
+
+# classify predictions
+Week <- Week %>% mutate(New_Direction = factor(ifelse(Predictions > 0.5, "Up", "Down")))
+
+# display first few rows
+head(Week)
+
+# output results
+summary(model)
+```
+
+The only statistically significant predictor is **Lag2**. Its p-value is 0.0296, which is lower than the p-value of 0.05. The rest of the predictors have p-values much larger than 0.05, making them not statistically significant.
+
+
+
+### Problem 5: Confusion Matrix
+```{r}
+# make confusion matrix
+cm <- table(Week$Direction, Week$New_Direction)
+
+# display confusion matrix
+show(cm)
+
+# convert to list
+cm_list <- list(cm)
+
+# extract results
+tp <- cm_list[[1]][1]
+fp <- cm_list[[1]][2]
+fn <- cm_list[[1]][3]
+tn <- cm_list[[1]][4]
+
+# calc prop of correct predictions
+correct_predict <- (tp+tn)/(tp+fp+fn+tn)
+correct_up <- tn/(fp+tn)
+correct_down <- tp/(fn+tp)
+overall_down <- (tp+fp)/(tp+fp+fn+tn)
+overall_up <- (fn+tn)/(tp+fp+fn+tn)
+
+# output results
+sprintf("Overall Correct Predictions: %0.2f%%", correct_predict*100)
+sprintf("Up Correct Predictions: %0.2f%%", correct_up*100)
+sprintf("Down Correct Predictions: %0.2f%%", correct_down*100)
+sprintf("Up Predictions: %0.2f%%", overall_up*100)
+sprintf("Down Predictions: %0.2f%%", overall_down*100)
+```
+
+The confusion matrix tells us:  
+* actually **Down**, predicted as **Down** = 54  
+* actually **Up**, predicted as **Down** = 48  
+* actually **Down**, predicted as **Up** = 430  
+* actually **Up**, predicted as **Up** = 557  
+
+The model has an overall accuracy rate of 56.11%. It is 92.07% likely to correctly predict the direction of **Up** and only 11.16% for **Down**.  
+Further investigation reveals that the number of points classified as having the direction **Up** is almost 10 times that of **Down**.  
+
+From this, we can conclude that the model tends to classify the direction as **Up** and makes the most errors classifying **Down**.  
+\
+\
+\

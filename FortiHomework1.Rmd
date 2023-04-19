@@ -1,0 +1,44 @@
+---
+title: "Homework 1"
+author: "Lauren Forti"
+date: "10/21/2022"
+output: html_document
+---
+
+
+
+# Problem 1
+The Markdown cheat sheet and reference guide have been downloaded.
+
+
+
+# Problem 2
+```{r}
+# display first 5 rows of iris df
+head(iris)
+```
+
+
+
+# Problem 3
+a) Regression
+b) Classification
+c) Regression
+
+
+
+# Problem 4
+## Potentially Useful Applications of Classification
+1) **Identifying mushrooms:** The predictors would be different attributes of the mushrooms, such as the type of gill attachment and cap color. The response would be the name of the mushroom.
+2) **Cars:** The predictors would be the country of manufacture, type of car (sedan, coupe, truck), and color. The response would be the maker of the car.
+3) **Disease Diagnosis:** The predictors would be age, gender, smoking status, and severity of different symptoms. The response would be whether or not the patient had the disease.
+
+## Potentially Useful Applications of Regression
+1) **Salary:** The predictors would be the years of experience, years of education, and years at the company. The response would be the salary.  
+2) **Population:** The predictors would be the year and yearly change in population. The response would be the population.  
+3) **Disease Prognosis:** The predictors would be age, year of onset, and tumor measurements. The response would be prognosis.
+
+
+
+# Problem 5
+The available models will have different levels of bias and variance based on its complexity. Usually, when variance increases, bias decreases. This model could be overfit. When variance decreases and bias is high, then the model could be underfit. The best model will have balanced bias and variance, also called the bias-variance tradeoff.
